@@ -31,8 +31,12 @@ static void user_write_data(png_structp png_ptr, png_bytep data,
             new_cap *= 2;
         }
 
-        qrpng_buf->cap = new_cap;
+        qrpng_buf->cap  = new_cap;
         qrpng_buf->data = realloc(qrpng_buf->data, new_cap);
+        if (qrpng_buf->data == NULL) {
+            /* whomp whomp */
+            return;
+        }
     }
 
     memcpy(qrpng_buf->data + qrpng_buf->len, data, length);
