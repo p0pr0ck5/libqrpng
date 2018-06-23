@@ -4,42 +4,94 @@
 
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+#include <string.h>
 #include "png.h"
 #include "qrencode.h"
+#include "qrpng.h"
 
 
 static int qr_hint        = QR_MODE_8;
-static int qr_size        = 4;
-static int qr_margin      = 4;
+static int qr_size        = 8;
+static int qr_margin      = 1;
 static int qr_version     = 0;
 static QRecLevel qr_level = QR_ECLEVEL_L;
 
 
+static void user_write_data(png_structp png_ptr, png_bytep data,
+                            png_size_t length)
+{
+    qrpng_buf_t *qrpng_buf = (qrpng_buf_t *)png_get_io_ptr(png_ptr);
+
+    /* increase the buffer size if libpng wants to write more data that we hold
+     * by default we double in size, but that may not be sufficient */
+    if (qrpng_buf->len + length > qrpng_buf->cap) {
+        size_t new_cap = qrpng_buf->cap * 2;
+
+        while (qrpng_buf->len + length > new_cap) {
+            new_cap *= 2;
+        }
+
+        qrpng_buf->cap = new_cap;
+        qrpng_buf->data = realloc(qrpng_buf->data, new_cap);
+    }
+
+    memcpy(qrpng_buf->data + qrpng_buf->len, data, length);
+    qrpng_buf->len += length;
+}
+
+
+/* needed but not used */
+static void user_flush_data(png_structp png_ptr)
+{
+}
+
+
+qrpng_buf_t *
+qrpng_init()
+{
+    qrpng_buf_t  *qrpng_buf;
+
+    qrpng_buf = malloc(sizeof(qrpng_buf_t));
+    if (qrpng_buf == NULL) {
+        return NULL;
+    }
+
+    qrpng_buf->len  = 0;
+    qrpng_buf->cap  = INIT_QRPNG_BUF_SZ;
+    qrpng_buf->data = malloc(INIT_QRPNG_BUF_SZ);
+    if (qrpng_buf->data == NULL) {
+        return NULL;
+    }
+
+    return qrpng_buf;
+}
+
+
+void qrpng_free(qrpng_buf_t *q)
+{
+    if (q->data != NULL) {
+        free(q->data);
+    }
+    if (q != NULL) {
+        free(q);
+    }
+}
+
+
 int
-create_qr_png(const char *data, const char *path)
+qrpng_create(qrpng_buf_t *qrpng_buf, const char *data)
 {
     int             x, y, xx, yy, bit, realwidth;
-    FILE           *fp;
     QRcode         *qrcode;
     png_infop       info_ptr; 
     png_structp     png_ptr;
     unsigned char  *row, *p, *q;
 
 
-    fp = fopen(path, "w");
-    if (fp == NULL) {
-        return 1;
-    }
-
-
     qrcode = QRcode_encodeString(data, qr_version, qr_level, qr_hint, 1);
 
 
     realwidth = (qrcode->width + qr_margin * 2) * qr_size;
-    printf("%d bytes", (realwidth + 7) / 8);
     row = malloc((realwidth + 7) / 8);
     if (row == NULL) {
         return 2;
@@ -65,7 +117,7 @@ create_qr_png(const char *data, const char *path)
     }   
     
 
-    png_init_io(png_ptr, fp);
+    png_set_write_fn(png_ptr, qrpng_buf, user_write_data, user_flush_data);
     png_set_IHDR(png_ptr, info_ptr,
                  realwidth, realwidth,
                  1,
@@ -123,8 +175,6 @@ create_qr_png(const char *data, const char *path)
 
 
     free(row);
-    fflush(fp);
-    fclose(fp);
 
 
     return 0;
