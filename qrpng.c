@@ -87,9 +87,7 @@ qrpng_create(qrpng_buf_t *qrpng_buf, const char *data)
     png_structp     png_ptr;
     unsigned char  *row, *p, *q;
 
-
     qrcode = QRcode_encodeString(data, qr_version, qr_level, qr_hint, 1);
-
 
     realwidth = (qrcode->width + qr_margin * 2) * qr_size;
     row = malloc((realwidth + 7) / 8);
@@ -97,26 +95,22 @@ qrpng_create(qrpng_buf_t *qrpng_buf, const char *data)
         return 2;
     }   
  
-   
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (png_ptr == NULL) {
         return 3;
     }   
 
-    
     info_ptr = png_create_info_struct(png_ptr);
     if (info_ptr == NULL) {
         return 4;
     }   
 
-    
     if (setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_write_struct(&png_ptr, &info_ptr);
         fprintf(stderr, "Failed to write PNG image.\n");
         exit(EXIT_FAILURE);
     }   
     
-
     png_set_write_fn(png_ptr, qrpng_buf, user_write_data, user_flush_data);
     png_set_IHDR(png_ptr, info_ptr,
                  realwidth, realwidth,
@@ -127,14 +121,12 @@ qrpng_create(qrpng_buf_t *qrpng_buf, const char *data)
                  PNG_FILTER_TYPE_DEFAULT);
     png_write_info(png_ptr, info_ptr);
     
-
     /* top margin */
     memset(row, 0xff, (realwidth + 7) / 8);
     for (y = 0; y < qr_margin * qr_size; y++) {
         png_write_row(png_ptr, row);
     }   
 
-    
     /* data */
     p = qrcode->data;
     for (y = 0; y < qrcode->width; y++) {
@@ -159,23 +151,17 @@ qrpng_create(qrpng_buf_t *qrpng_buf, const char *data)
         }
     }
 
-
     /* bottom margin */
     memset(row, 0xff, (realwidth + 7) / 8);
     for (y = 0; y < qr_margin * qr_size; y++) {
         png_write_row(png_ptr, row);
     }
 
-
     png_write_end(png_ptr, info_ptr);
     png_destroy_write_struct(&png_ptr, &info_ptr);
 
-
     QRcode_free(qrcode);
-
-
     free(row);
-
 
     return 0;
 }
