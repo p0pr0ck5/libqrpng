@@ -17,8 +17,8 @@ static int qr_version     = 0;
 static QRecLevel qr_level = QR_ECLEVEL_L;
 
 
-static void user_write_data(png_structp png_ptr, png_bytep data,
-                            png_size_t length)
+static void
+user_write_data(png_structp png_ptr, png_bytep datam png_size_t length)
 {
     qrpng_buf_t *qrpng_buf = (qrpng_buf_t *)png_get_io_ptr(png_ptr);
 
@@ -45,7 +45,8 @@ static void user_write_data(png_structp png_ptr, png_bytep data,
 
 
 /* needed but not used */
-static void user_flush_data(png_structp png_ptr)
+static void
+user_flush_data(png_structp png_ptr)
 {
 }
 
@@ -71,7 +72,8 @@ qrpng_init()
 }
 
 
-void qrpng_free(qrpng_buf_t *q)
+void
+qrpng_free(qrpng_buf_t *q)
 {
     if (q->data != NULL) {
         free(q->data);
