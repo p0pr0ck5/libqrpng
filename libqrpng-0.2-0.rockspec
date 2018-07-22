@@ -1,8 +1,8 @@
 package = "libqrpng"
-version = "0.1-0"
+version = "0.2-0"
 source = {
     url = "git://github.com/p0pr0ck5/libqrpng",
-    tag = "0.1",    
+    tag = "0.2",    
 }
 description = {
     summary = "Create QR codes as png files",
